@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Calculadora de Horas (Campo) | Field Hours</title>
+  <style>
+    :root { --b:#e5e5e5; --bg:#0b0b0c; --card:#141416; --txt:#f6f6f6; --mut:#b7b7b7; --ok:#1f8a4c; --warn:#c47c00; --bad:#c03030; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; background: var(--bg); color: var(--txt); }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px 28px; }
+    .title { font-size: 20px; font-weight: 900; margin: 0 0 6px; }
+    .sub { margin: 0 0 12px; color: var(--mut); font-size: 13px; line-height: 1.35; }
+
+    .card { background: var(--card); border: 1px solid #222; border-radius: 16px; padding: 14px; }
+    .sectionTitle { font-weight: 900; margin: 0 0 10px; font-size: 14px; color: #fff; }
+
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .label { font-weight: 800; font-size: 13px; margin-bottom: 6px; color: #fff; }
+    .hint { color: var(--mut); font-weight: 600; font-size: 12px; margin-left: 6px; }
+
+    select, input {
+      width: 100%;
+      padding: 12px 12px;
+      border: 1px solid #2a2a2a;
+      border-radius: 14px;
+      background: #0f0f10;
+      color: var(--txt);
+      font-size: 18px;
+      outline: none;
+    }
+    input::placeholder { color: #777; }
+
+    .timeBox { border: 1px solid #222; border-radius: 14px; padding: 12px; background: #101012; }
+    .timeRow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .btnRow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .btn {
+      padding: 14px 12px;
+      border-radius: 16px;
+      border: 1px solid #2a2a2a;
+      background: #1a1a1c;
+      color: var(--txt);
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btnPrimary { background: #2b62ff; border-color: #2b62ff; }
+    .btnGhost { background: transparent; }
+    .btn:active { transform: scale(0.99); }
+
+    .chipRow { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+    .chip {
+      flex: 1;
+      min-width: 140px;
+      padding: 12px 10px;
+      border-radius: 14px;
+      border: 1px solid #2a2a2a;
+      background: #0f0f10;
+      color: var(--txt);
+      font-weight: 900;
+      font-size: 14px;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .chip small { display:block; color: var(--mut); font-weight: 700; margin-top: 4px; }
+    .chip.active { border-color: #2b62ff; box-shadow: 0 0 0 2px rgba(43,98,255,0.25) inset; }
+
+    .result {
+      margin-top: 14px;
+      border-radius: 16px;
+      padding: 14px;
+      background: #0f1210;
+      border: 1px solid #223524;
+    }
+    .resultTop { display:flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+    .resultBig { font-size: 26px; font-weight: 1000; letter-spacing: 0.2px; }
+    .badge { font-size: 12px; font-weight: 900; padding: 6px 10px; border-radius: 999px; background: rgba(31,138,76,0.15); color: #bff2cf; border: 1px solid rgba(31,138,76,0.35); }
+    .badge.warn { background: rgba(196,124,0,0.15); color: #ffd9a6; border-color: rgba(196,124,0,0.35); }
+    .badge.bad { background: rgba(192,48,48,0.15); color: #ffb7b7; border-color: rgba(192,48,48,0.35); }
+
+    .mono { font-variant-numeric: tabular-nums; }
+    .detail { margin-top: 8px; color: var(--mut); font-size: 13px; line-height: 1.35; }
+    .footerNote { margin-top: 10px; color: var(--mut); font-size: 12px; }
+
+    /* 固定底部結果（現場更方便） */
+    .sticky {
+      position: sticky;
+      bottom: 10px;
+      z-index: 5;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <h1 class="title">Calculadora de Horas (Campo)</h1>
+    <p class="sub">
+      ES principal / EN secondary. <br>
+      Sin fecha. Si fin &lt; inicio → asume día siguiente (cross-midnight).
+    </p>
+
+    <div class="card">
+      <div class="sectionTitle">1) Horas / Times</div>
+
+      <div class="grid2">
+        <div class="timeBox">
+          <div class="label">Inicio <span class="hint">Start</span></div>
+          <div class="timeRow">
+            <div>
+              <div class="label" style="font-weight:800; color:#ddd; font-size:12px;">Hora (HH)</div>
+              <select id="sH"></select>
+            </div>
+            <div>
+              <div class="label" style="font-weight:800; color:#ddd; font-size:12px;">Min (MM)</div>
+              <select id="sM"></select>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeBox">
+          <div class="label">Fin <span class="hint">End</span></div>
+          <div class="timeRow">
+            <div>
+              <div class="label" style="font-weight:800; color:#ddd; font-size:12px;">Hora (HH)</div>
+              <select id="eH"></select>
+            </div>
+            <div>
+              <div class="label" style="font-weight:800; color:#ddd; font-size:12px;">Min (MM)</div>
+              <select id="eM"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sectionTitle" style="margin-top:14px;">2) Tipo / Type (auto add)</div>
+      <div class="chipRow">
+        <div class="chip active" data-type="none" id="chipNone">
+          Ninguno <small>+0 min</small>
+        </div>
+        <div class="chip" data-type="insulation" id="chipIns">
+          Insulation <small>+25 min</small>
+        </div>
+        <div class="chip" data-type="conductive" id="chipCon">
+          Conductive <small>+15 min</small>
+        </div>
+      </div>
+
+      <div class="sectionTitle" style="margin-top:14px;">3) Ajuste manual (min) <span class="hint">Optional</span></div>
+      <input id="manual" type="number" inputmode="numeric" placeholder="Ej: -10 o 20 (opcional)" />
+
+      <div class="btnRow">
+        <button class="btn btnPrimary" id="btnCalc">CALCULAR</button>
+        <button class="btn btnGhost" id="btnClear">LIMPIAR</button>
+      </div>
+
+      <div class="btnRow" style="grid-template-columns: 1fr 1fr;">
+        <button class="btn" id="btnExample">Ejemplo 19:59 → 06:48</button>
+        <button class="btn" id="btnNow">Fin = Ahora</button>
+      </div>
+    </div>
+
+    <!-- Sticky Result (always visible) -->
+    <div class="sticky">
+      <div class="result" id="result">
+        <div class="resultTop">
+          <div class="resultBig mono" id="outBig">Total: —</div>
+          <div class="badge warn" id="badge">Pendiente</div>
+        </div>
+        <div class="detail mono" id="outDetail">Base: — | Tipo: — | Ajuste: —</div>
+        <div class="footerNote" id="outNote">Pulsa CALCULAR para ver el resultado. / Press CALCULAR.</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const sH = document.getElementById('sH');
+  const sM = document.getElementById('sM');
+  const eH = document.getElementById('eH');
+  const eM = document.getElementById('eM');
+  const manual = document.getElementById('manual');
+
+  const outBig = document.getElementById('outBig');
+  const outDetail = document.getElementById('outDetail');
+  const outNote = document.getElementById('outNote');
+  const badge = document.getElementById('badge');
+
+  let selectedType = "none"; // none | insulation | conductive
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+
+  function fill(sel, max){
+    // add placeholder option (mobile friendly)
+    for (let i=0;i<=max;i++){
+      const opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent = pad2(i);
+      sel.appendChild(opt);
+    }
+  }
+
+  fill(sH, 23); fill(eH, 23);
+  fill(sM, 59); fill(eM, 59);
+
+  // Default values (avoid empty -> no result)
+  sH.value = "19"; sM.value = "59";
+  eH.value = "6";  eM.value = "48";
+
+  function typeAddMin(){
+    if (selectedType === "insulation") return 25;
+    if (selectedType === "conductive") return 15;
+    return 0;
+  }
+
+  function formatHM(totalMin){
+    const sign = totalMin < 0 ? "-" : "";
+    const abs = Math.abs(totalMin);
+    const h = Math.floor(abs / 60);
+    const m = abs % 60;
+    return `${sign}${h} h ${pad2(m)} min`;
+  }
+
+  function setBadge(kind, text){
+    badge.className = "badge " + (kind || "");
+    badge.textContent = text;
+  }
+
+  function calc(){
+    const startMin = Number(sH.value)*60 + Number(sM.value);
+    const endMin   = Number(eH.value)*60 + Number(eM.value);
+
+    let base = endMin - startMin;
+    let crossed = false;
+    if (base < 0){
+      base += 24*60;
+      crossed = true;
+    }
+
+    let adj = 0;
+    const raw = String(manual.value ?? "").trim();
+    if (raw !== ""){
+      adj = Number(raw);
+      if (Number.isNaN(adj)){
+        outBig.textContent = "Total: —";
+        outDetail.textContent = "Base: — | Tipo: — | Ajuste: —";
+        outNote.textContent = "Ajuste manual inválido (min). / Invalid manual adjust.";
+        setBadge("bad", "Error");
+        return;
+      }
+      adj = Math.round(adj);
+    }
+
+    const add = typeAddMin();
+    const total = base + add + adj;
+    const dec2 = Math.round((total/60)*100)/100;
+
+    outBig.textContent = `Total: ${formatHM(total)}  ( ${dec2} h )`;
+    outDetail.textContent = `Base: ${formatHM(base)} | Tipo: +${add} min | Ajuste: ${adj>=0?"+":""}${adj} min`;
+
+    if (total < 0){
+      outNote.textContent = "⚠️ Total negativo. Revisa ajuste manual. / Negative total, check manual.";
+      setBadge("bad", "Revisar");
+      return;
+    }
+
+    if (crossed){
+      outNote.textContent = "Cruce al día siguiente detectado. / Cross-midnight detected.";
+      setBadge("", "OK");
+    } else {
+      outNote.textContent = "Mismo día. / Same day.";
+      setBadge("", "OK");
+    }
+  }
+
+  // Type chips
+  function setType(t){
+    selectedType = t;
+    document.getElementById('chipNone').classList.toggle('active', t==="none");
+    document.getElementById('chipIns').classList.toggle('active', t==="insulation");
+    document.getElementById('chipCon').classList.toggle('active', t==="conductive");
+  }
+  document.getElementById('chipNone').addEventListener('click', ()=>setType("none"));
+  document.getElementById('chipIns').addEventListener('click', ()=>setType("insulation"));
+  document.getElementById('chipCon').addEventListener('click', ()=>setType("conductive"));
+
+  // Buttons
+  document.getElementById('btnCalc').addEventListener('click', calc);
+  document.getElementById('btnClear').addEventListener('click', ()=>{
+    sH.value=""; sM.value=""; eH.value=""; eM.value="";
+    manual.value="";
+    setType("none");
+    outBig.textContent = "Total: —";
+    outDetail.textContent = "Base: — | Tipo: — | Ajuste: —";
+    outNote.textContent = "Pulsa CALCULAR para ver el resultado. / Press CALCULAR.";
+    setBadge("warn", "Pendiente");
+  });
+
+  document.getElementById('btnExample').addEventListener('click', ()=>{
+    sH.value="19"; sM.value="59";
+    eH.value="6";  eM.value="48";
+    manual.value="";
+    setType("none");
+    calc();
+  });
+
+  document.getElementById('btnNow').addEventListener('click', ()=>{
+    const now = new Date();
+    eH.value = String(now.getHours());
+    eM.value = String(now.getMinutes());
+    calc();
+  });
+
+  // Optional: calculate when changing (but still have CALCULAR as primary)
+  [sH,sM,eH,eM,manual].forEach(el=>{
+    el.addEventListener('change', ()=>{ /* do nothing auto to avoid mobile issues */ });
+  });
+
+  // First paint
+  setType("none");
+  setBadge("warn", "Pendiente");
+</script>
+</body>
+</html>
